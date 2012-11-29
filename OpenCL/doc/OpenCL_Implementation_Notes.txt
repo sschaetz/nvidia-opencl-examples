@@ -1,0 +1,190 @@
+OpenCL Implementation Notes
+
+Published by
+   NVIDIA Corporation
+   2701 San Tomas Expressway
+   Santa Clara, CA 95050
+
+Notice
+
+ALL NVIDIA DESIGN SPECIFICATIONS, REFERENCE BOARDS, FILES, DRAWINGS, 
+DIAGNOSTICS, LISTS, AND OTHER DOCUMENTS (TOGETHER AND SEPARATELY, 
+"MATERIALS") ARE BEING PROVIDED "AS IS". NVIDIA MAKES NO WARRANTIES, 
+EXPRESSED, IMPLIED, STATUTORY, OR OTHERWISE WITH RESPECT TO THE MATERIALS, 
+AND EXPRESSLY DISCLAIMS ALL IMPLIED WARRANTIES OF NONINFRINGEMENT, 
+MERCHANTABILITY, AND FITNESS FOR A PARTICULAR PURPOSE.
+
+Information furnished is believed to be accurate and reliable. However, 
+NVIDIA Corporation assumes no responsibility for the consequences of use 
+of such information or for any infringement of patents or other rights 
+of third parties that may result from its use. No license is granted by 
+implication or otherwise under any patent or patent rights of NVIDIA 
+Corporation. Specifications mentioned in this publication are subject 
+to change without notice. This publication supersedes and replaces all 
+information previously supplied. NVIDIA Corporation products are not 
+authorized for use as critical components in life support devices or 
+systems without express written approval of NVIDIA Corporation. 
+
+Trademarks
+
+NVIDIA, and the NVIDIA logo are trademarks or registered trademarks 
+of NVIDIA Corporation in the United States and other countries. Other 
+company and product names may be trademarks of the respective companies 
+with which they are associated.
+
+Copyright
+
+(C) 2005-2012 by NVIDIA Corporation. All rights reserved.
+
+
+OpenCL Implementation Notes
+===========================
+
+This document describes the "Implementation Defined" behavior for the NVIDIA
+OpenCL implementation as required by the OpenCL specification Version: 1.0.
+
+The implementation defined behavior is referenced below in the order of it's
+reference in the OpenCL specification and is grouped by the section number for
+the specification.
+
+3.2.2 (Native Kernels)
+----------------------
+o Native kernels are not supported in this release.
+
+4.1, 4.2 & 4.3 (NULL platforms)
+-------------------------------
+o clGetPlatformInfo and/or clGetDeviceIDs will fail with the CL_INVALID_PLATFORM
+  error if platform is NULL.
+
+o clCreateContext will select the platform from the devices passed in as the
+  parameter if:
+    - properties is NULL
+    - CL_CONTEXT_PLATFORM property is not explicitly set in properties
+    - CL_CONTEXT_PLATFORM property is set as NULL in properties
+
+o clCreateContextFromType will fail with the CL_INVALID_PLATFORM error if:
+    - properties is NULL
+    - CL_CONTEXT_PLATFORM property is not explicitly set in properties
+    - CL_CONTEXT_PLATFORM property is set as NULL in properties
+
+o clGetDeviceInfo (see Known Issues)
+
+5.1 (Unavailable devices)
+-------------------------
+o If a device(s) becomes unavailable after a context and command-queues that use
+  this device(s) have been created and commands have been queued to them, the
+  implementation will fail with the CL_OUT_OF_RESOURCES error for further API
+  calls. The state of the commands enqueued so far is left undefined.
+
+  The application should destroy the objects associated with such a context and
+  re-query the available device list.
+
+
+6.2.3.3 Out of Range Behavior and Saturated Conversions
+-------------------------------------------------------
+
+When converting from a floating-point type to integer type, the 
+values that are outside the representable range are clamped to 
+the nearest representable value in the destination format.
+
+
+6.2.4.2 Reinterpreting Types Using as_typen()
+---------------------------------------------
+When the operand and result type contain the same number of bytes
+and a different number of elements, the result contains all the 
+original bits in the original order.
+
+
+6.8 (k) Restrictions
+--------------------
+The size of bool is 1.
+The size of size_t, ptrdiff_t, intptr_t and uintptr_t is 4 if 
+CL_DEVICE_ADDRESS_BITS defined in table 4.3 is 32-bits and is a 8 if 
+CL_DEVICE_ADDRESS_BITS is 64-bits.
+
+
+6.8 (I) 
+-------
+Use of irreducible control flow is not recommended. 
+
+
+6.9 Preprocessor Directives and Macros
+--------------------------------------
+
+A # pragma directive where the preprocessing token OPENCL or UNROLL (used
+instead of STDC)  might cause translation to fail or cause the translator 
+or the resulting program to behave in a non-conforming manner.
+
+
+
+6.11.2.1 Floating-point macros and pragmas for math.h
+-----------------------------------------------------
+
+These constant expressions are suitable for use in #if
+preprocessing directives.
+
+#define FLT_DIG 6
+#define FLT_MANT_DIG 24
+#define FLT_MAX_10_EXP +38
+#define FLT_MAX_EXP +128
+#define FLT_MIN_10_EXP -37
+#define FLT_MIN_EXP -125
+#define FLT_RADIX 2
+#define FLT_MAX 0x1.fffffep127f
+#define FLT_MIN 0x1.0p-126f
+
+6.11.3 Integer Functions
+------------------------
+
+#define CHAR_BIT 8
+#define CHAR_MAX SCHAR_MAX
+#define CHAR_MIN SCHAR_MIN
+#define INT_MAX 2147483647
+#define INT_MIN (-2147483647 – 1)
+#define LONG_MAX (0x7fffffffffffffffL)
+#define LONG_MIN (-0x7fffffffffffffffL – 1)
+#define SCHAR_MAX 127
+#define SCHAR_MIN (-128)
+#define SHRT_MAX 32767
+#define SHRT_MIN (-32768)
+#define UCHAR_MAX 255
+#define USHRT_MAX 65535
+#define UINT_MAX 0xffffffff
+#define ULONG_MAX 0xffffffffffffffffUL
+
+
+9.3.2 Math Functions
+--------------------
+
+(double)
+
+These constant expressions are suitable for use in #if
+preprocessing directives.
+
+#define DBL_DIG 15
+#define DBL_MANT_DIG 53
+#define DBL_MAX_10_EXP +308
+#define DBL_MAX_EXP +1024
+#define DBL_MIN_10_EXP -307
+#define DBL_MIN_EXP -1021
+#define DBL_MAX 0x1.fffffffffffffp1023
+#define DBL_MIN 0x1.0p-1022
+#define DBL_EPSILON 0x1.0p-52
+
+9.12.3 CL Image Objects -> GL Textures
+--------------------------------------
+
+If the texture object specified in a call to clCreateFromGLTexture2D or
+clCreateFromGLTexture3D is incomplete as per OpenGL rules on texture
+completeness then the call will return CL_INVALID_GL_OBJECT in errcode_ret.
+
+
+Known Issues
+============
+
+* The maximum alignment of a function scope local variable and a function
+  parameter variable is limited to 16-byte.
+
+* For SM 1.x GPUs clGetDeviceInfo for CL_DEVICE_IMAGE2D_MAX_HEIGHT returns
+  16383 despite the device supporting heights up to 32768. This is due to
+  a hardware limit when using normalized coordinates.
